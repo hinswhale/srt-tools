@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>双语字幕编辑系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <style>
+        /* 基础样式 */
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            padding: 20px;
+        }
+
+        /* 视频播放器容器样式 */
+        .subtitle-container {
+            width: 100%;
+            max-width: 800px; /* 限制最大宽度 */
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* 视频元素样式 */
+        video {
+            width: 100%;
+            max-height: 450px; /* 限制最大高度 */
+            object-fit: contain; /* 保持视频比例 */
+            background: #000; /* 视频背景色 */
+            border-radius: 4px;
+        }
+
+        /* 字幕控制面板样式 */
+        .subtitle-controls {
+            background: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 800px; /* 与视频容器同宽 */
+        }
+
+        /* 字幕容器样式 */
+        .subtitle {
+            position: absolute;
+            bottom: 60px; /* 调整位置，避免与视频控件重叠 */
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 2;
+            cursor: move;
+            user-select: none;
+            width: 80%; /* 限制字幕宽度 */
+            max-width: 600px;
+        }
+
+        /* 字幕文本样式 */
+        .subtitle-text {
+            padding: 8px 16px;
+            margin: 4px 0;
+            border-radius: 4px;
+            word-wrap: break-word; /* 长文本自动换行 */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5); /* 文字阴影提高可读性 */
+        }
+
+        /* 当前行高亮样式 */
+        .current-line {
+            background-color: #fff3cd;
+            transition: background-color 0.3s ease;
+        }
+
+        /* 编辑区域样式 */
+        .subtitle-editor {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            height: 300px !important;
+        }
+
+        /* 响应式布局调整 */
+        @media (max-width: 768px) {
+            .subtitle-container {
+                max-width: 100%;
+            }
+            
+            video {
+                max-height: 300px;
+            }
+            
+            .subtitle {
+                width: 90%;
+            }
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+
+  
+
+        .form-label {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+
+
+        .btn {
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-weight: 500;
+        }
+
+        .btn-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .current-line {
+            background-color: #fff3cd; /* 高亮颜色 */
+            display: block;
+            width: 100%;
+        }
+
+        .subtitle-highlight {
+            position: absolute;
+            left: 0;
+            right: 0;
+            background-color: #fff3cd;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* 确保文本区域容器正确定位 */
+        .col-md-6 > div {
+            position: relative;
+        }
+
+        .current-line-highlight {
+            position: absolute;
+            left: 0;
+            right: 0;
+            background-color: #fff3cd;
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .subtitle {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 2;
+            cursor: move;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">双语字幕编辑系统</h1>
+        
+        <div class="mb-3">
+            <label for="video-upload" class="form-label">上传视频</label>
+            <input class="form-control" type="file" id="video-upload" accept="video/*">
+        </div>
+        
+        <div class="mb-3">
+            <label for="zh-subtitle-upload" class="form-label">上传中文字幕（SRT）</label>
+            <input class="form-control" type="file" id="zh-subtitle-upload" accept=".srt">
+        </div>
+        <div class="mb-3">
+            <label for="en-subtitle-upload" class="form-label">上传英文字幕文件（SRT）</label>
+            <input class="form-control" type="file" id="en-subtitle-upload" accept=".srt">
+        </div>
+        
+        <div id="video-player" class="subtitle-container">
+            <video id="video" controls>
+                <source src="" type="video/mp4">
+                您的浏览器不支持 HTML5 视频。
+            </video>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h2>中文字幕</h2>
+                <div style="position: relative;">
+                    <textarea id="zh-subtitles" class="form-control subtitle-editor" style="height: 300px;"></textarea>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h2>英文字幕</h2>
+                <div style="position: relative;">
+                    <textarea id="en-subtitles" class="form-control subtitle-editor" style="height: 300px;"></textarea>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-3">
+            <div class="btn-group">
+                <button onclick="syncSubtitles()" class="btn btn-primary">
+                    <i class="bi bi-clock"></i> 同步时间戳
+                </button>
+                <button onclick="saveAsDraft()" class="btn btn-secondary">
+                    <i class="bi bi-save"></i> 保存草稿
+                </button>
+                <button onclick="exportSubtitles('zh')" class="btn btn-success">
+                    <i class="bi bi-download"></i> 导出中文字幕
+                </button>
+                <button onclick="exportSubtitles('en')" class="btn btn-success">
+                    <i class="bi bi-download"></i> 导出英文字幕
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let zhSubtitles = [];
+        let enSubtitles = [];
+
+        // 视频上传
+        document.getElementById('video-upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const video = document.getElementById('video');
+            
+            // 移除现有的字幕容器（如果存在）
+            const existingSubtitle = document.querySelector('.subtitle');
+            if (existingSubtitle) {
+                existingSubtitle.remove();
+            }
+            
+            // 设置新的视频源
+            video.src = URL.createObjectURL(file);
+            
+            // 创建新的字幕容器
+            const subtitleDiv = document.createElement('div');
+            subtitleDiv.className = 'subtitle';
+            subtitleDiv.style.cssText = `
+                position: absolute;
+                bottom: 100px;
+                left: 50%;
+                transform: translateX(-50%);
+                text-align: center;
+                z-index: 1;
+                cursor: move;
+            `;
+            
+            const zhDiv = document.createElement('div');
+            zhDiv.className = 'subtitle-zh';
+            zhDiv.style.cssText = `
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+                padding: 8px 16px;
+                margin: 8px 0;
+                background-color: rgba(0, 0, 0, 0.8);
+                border-radius: 4px;
+                display: block;
+            `;
+            
+            const enDiv = document.createElement('div');
+            enDiv.className = 'subtitle-en';
+            enDiv.style.cssText = zhDiv.style.cssText;
+            
+            subtitleDiv.appendChild(zhDiv);
+            subtitleDiv.appendChild(enDiv);
+            video.parentElement.appendChild(subtitleDiv);
+            
+            // 添加拖动功能
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            subtitleDiv.addEventListener('mousedown', dragStart);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', dragEnd);
+
+            function dragStart(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                if (e.target === subtitleDiv) {
+                    isDragging = true;
+                }
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    setTranslate(currentX, currentY, subtitleDiv);
+                }
+            }
+
+            function dragEnd(e) {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+            }
+
+            function setTranslate(xPos, yPos, el) {
+                el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+            }
+            
+            // 当视频开始播放时显示字幕容器
+            video.addEventListener('play', function() {
+                subtitleDiv.style.display = 'block';
+            });
+            
+            // 当视频暂停时隐藏字幕容器
+            video.addEventListener('pause', function() {
+                subtitleDiv.style.display = 'none';
+            });
+        });
+
+        // 中文字幕上传
+        document.getElementById('zh-subtitle-upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                document.getElementById('zh-subtitles').value = content;
+                zhSubtitles = parseSRT(content);
+                console.log('中文字幕已加载', zhSubtitles);
+            };
+            reader.readAsText(file);
+        });
+
+        // 英文幕上传
+        document.getElementById('en-subtitle-upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                document.getElementById('en-subtitles').value = content;
+                enSubtitles = parseSRT(content);
+                console.log('英文字幕已加载', enSubtitles);
+            };
+            reader.readAsText(file);
+        });
+
+        // 解析 SRT 文件
+        function parseSRT(content) {
+            const subtitles = [];
+            const blocks = content.trim().split('\n\n');
+            
+            for (const block of blocks) {
+                const lines = block.split('\n');
+                if (lines.length < 3) continue;
+                
+                const timeMatch = lines[1].match(/(\d{2}:\d{2}:\d{2},\d{3}) --> (\d{2}:\d{2}:\d{2},\d{3})/);
+                if (!timeMatch) continue;
+                
+                const startTime = parseTimeStr(timeMatch[1]);
+                const endTime = parseTimeStr(timeMatch[2]);
+                const text = lines.slice(2).join('\n');
+                
+                subtitles.push({
+                    start: startTime,
+                    end: endTime,
+                    text: text
+                });
+            }
+            return subtitles;
+        }
+
+        // 解析字符串
+        function parseTimeStr(timeStr) {
+            const [time, ms] = timeStr.split(',');
+            const [hours, minutes, seconds] = time.split(':').map(Number);
+            return hours * 3600 + minutes * 60 + seconds + parseInt(ms) / 1000;
+        }
+
+        // 更幕显示和文本框高亮
+        function updateSubtitles() {
+            const currentTime = video.currentTime;
+            
+            // 查找当前时间对应的字幕
+            const zhSubtitle = zhSubtitles.find(sub => 
+                currentTime >= sub.start && currentTime <= sub.end
+            );
+            const enSubtitle = enSubtitles.find(sub => 
+                currentTime >= sub.start && currentTime <= sub.end
+            );
+            
+            // 更新视频上的字幕显示
+            const zhDiv = document.querySelector('.subtitle-zh');
+            const enDiv = document.querySelector('.subtitle-en');
+            
+            if (zhDiv && zhSubtitle) {
+                zhDiv.textContent = zhSubtitle.text;
+                zhDiv.style.display = 'block';
+            } else if (zhDiv) {
+                zhDiv.style.display = 'none';
+            }
+            
+            if (enDiv && enSubtitle) {
+                enDiv.textContent = enSubtitle.text;
+                enDiv.style.display = 'block';
+            } else if (enDiv) {
+                enDiv.style.display = 'none';
+            }
+
+            // 高亮显示当前播放的字幕行
+            if (zhSubtitle) {
+                highlightCurrentLine('zh-subtitles', zhSubtitle.text);
+            }
+            if (enSubtitle) {
+                highlightCurrentLine('en-subtitles', enSubtitle.text);
+            }
+        }
+
+        // 添加字幕拖动功能
+        function addSubtitleDrag() {
+            const subtitleDiv = document.querySelector('.subtitle');
+            if (!subtitleDiv) return;
+
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+
+            subtitleDiv.addEventListener('mousedown', startDragging);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', stopDragging);
+
+            function startDragging(e) {
+                initialX = e.clientX - subtitleDiv.offsetLeft;
+                initialY = e.clientY - subtitleDiv.offsetTop;
+                isDragging = true;
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    subtitleDiv.style.left = currentX + 'px';
+                    subtitleDiv.style.top = currentY + 'px';
+                }
+            }
+
+            function stopDragging() {
+                isDragging = false;
+            }
+        }
+
+        // 高亮当前播放的字幕行
+        function highlightCurrentLine(textareaId, text) {
+            const textarea = document.getElementById(textareaId);
+            const lines = textarea.value.split('\n');
+            
+            // 移除现有的高亮
+            const existingHighlight = textarea.parentElement.querySelector('.current-line-highlight');
+            if (existingHighlight) {
+                existingHighlight.remove();
+            }
+
+            // 查找匹配的行
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes(text)) {
+                    // 创建高亮元素
+                    const highlight = document.createElement('div');
+                    highlight.className = 'current-line-highlight';
+                    highlight.style.cssText = `
+                        position: absolute;
+                        left: 0;
+                        right: 0;
+                        background-color: #fff3cd;
+                        opacity: 0.5;
+                        pointer-events: none;
+                        height: ${textarea.scrollHeight / lines.length}px;
+                        top: ${(textarea.scrollHeight / lines.length) * i}px;
+                    `;
+                    
+                    // 添加高亮元素
+                    textarea.parentElement.appendChild(highlight);
+                    
+                    // 滚动到当前行
+                    textarea.scrollTop = (textarea.scrollHeight / lines.length) * (i - 2);
+                    break;
+                }
+            }
+        }
+
+        // 确保文本区域容器的正确定位
+        document.addEventListener('DOMContentLoaded', function() {
+            const zhTextarea = document.getElementById('zh-subtitles');
+            const enTextarea = document.getElementById('en-subtitles');
+            
+            zhTextarea.parentElement.style.position = 'relative';
+            enTextarea.parentElement.style.position = 'relative';
+        });
+
+        // 添加文本框同步滚动
+        const zhTextarea = document.getElementById('zh-subtitles');
+        const enTextarea = document.getElementById('en-subtitles');
+
+        zhTextarea.addEventListener('scroll', function() {
+            enTextarea.scrollTop = zhTextarea.scrollTop;
+        });
+
+        enTextarea.addEventListener('scroll', function() {
+            zhTextarea.scrollTop = enTextarea.scrollTop;
+        });
+
+        // 监听视频时间新事件
+        const video = document.getElementById('video');
+        video.addEventListener('timeupdate', updateSubtitles);
+
+        // 在视频加载时初始化拖动功能
+        video.addEventListener('loadedmetadata', addSubtitleDrag);
+    </script>
+</body>
+</html>

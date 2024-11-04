@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频播放示例</title>
+    <style>
+        .subtitle-container {
+            position: relative;
+            width: 640px; /* 视频宽度 */
+            margin: auto;
+        }
+        video {
+            width: 100%; /* 视频自适应宽度 */
+        }
+        .subtitle {
+            position: absolute;
+            bottom: 50px; /* 字幕距离底部的距离 */
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            font-size: 24px; /* 字体大小 */
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="subtitle-container">
+        <video id="video" controls>
+            <source src="your-video-file.mp4" type="video/mp4"> <!-- 替换为您的视频文件 -->
+            您的浏览器不支持 HTML5 视频。
+        </video>
+        <div id="subtitles" class="subtitle"></div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const subtitles = document.getElementById('subtitles');
+
+        // 示例字幕数据
+        const subtitleData = [
+            { start: 0, end: 5, zh: "你好，世界！", en: "Hello, World!" },
+            { start: 5, end: 10, zh: "欢迎来到字幕示例。", en: "Welcome to the subtitle example." },
+            { start: 10, end: 15, zh: "这是中文字幕。", en: "This is Chinese subtitle." },
+            { start: 15, end: 20, zh: "这是英文字幕。", en: "This is English subtitle." }
+        ];
+
+        // 更新字幕
+        function updateSubtitles() {
+            const currentTime = video.currentTime;
+            const currentSubtitle = subtitleData.find(sub => currentTime >= sub.start && currentTime < sub.end);
+            if (currentSubtitle) {
+                subtitles.innerHTML = `${currentSubtitle.zh}<br>${currentSubtitle.en}`;
+            } else {
+                subtitles.innerHTML = ""; // 清空字幕
+            }
+        }
+
+        // 监听视频时间更新事件
+        video.addEventListener('timeupdate', updateSubtitles);
+    </script>
+</body>
+</html>
