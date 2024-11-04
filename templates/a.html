@@ -172,6 +172,28 @@
             z-index: 2;
             cursor: move;
         }
+
+         /* 新增字幕样式控制面板 */
+         .subtitle-style-controls {
+            background: #fff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 800px;
+        }
+
+        /* 修改字幕样式 */
+        .subtitle-text {
+            padding: 8px 16px;
+            margin: 4px 0;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .form-select {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -191,6 +213,50 @@
             <label for="en-subtitle-upload" class="form-label">上传英文字幕文件（SRT）</label>
             <input class="form-control" type="file" id="en-subtitle-upload" accept=".srt">
         </div>
+
+        <!-- 使用下拉框的字幕样式控制面板 -->
+    <div class="subtitle-style-controls">
+        <div class="row align-items-center">
+            <div class="col-md-3">
+                <label for="subtitle-color" class="form-label">字幕颜色</label>
+                <select class="form-select" id="subtitle-color">
+                    <option value="#FFFFFF">白色</option>
+                    <option value="#FFFF00">黄色</option>
+                    <option value="#00FFFF">青色</option>
+                    <option value="#FF00FF">粉色</option>
+                    <option value="#FF0000">红色</option>
+                    <option value="#00FF00">绿色</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="subtitle-background" class="form-label">背景颜色</label>
+                <select class="form-select" id="subtitle-background">
+                    <option value="rgba(0,0,0,0.7)">黑色半透明</option>
+                    <option value="rgba(0,0,0,0)">透明</option>
+                    <option value="rgba(0,0,128,0.7)">深蓝半透明</option>
+                    <option value="rgba(128,0,0,0.7)">深红半透明</option>
+                    <option value="rgba(0,128,0,0.7)">深绿半透明</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="subtitle-size" class="form-label">字幕大小</label>
+                <select class="form-select" id="subtitle-size">
+                    <option value="16">小 (16px)</option>
+                    <option value="24" selected>中 (24px)</option>
+                    <option value="32">大 (32px)</option>
+                    <option value="40">特大 (40px)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="subtitle-weight" class="form-label">字体粗细</label>
+                <select class="form-select" id="subtitle-weight">
+                    <option value="normal">普通</option>
+                    <option value="bold" selected>粗体</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
         
         <div id="video-player" class="subtitle-container">
             <video id="video" controls>
@@ -236,6 +302,7 @@
     <script>
         let zhSubtitles = [];
         let enSubtitles = [];
+        
 
         // 视频上传
         document.getElementById('video-upload').addEventListener('change', function(event) {
@@ -252,38 +319,32 @@
             video.src = URL.createObjectURL(file);
             
             // 创建新的字幕容器
-            const subtitleDiv = document.createElement('div');
+           // 创建新的字幕容器
+           const subtitleDiv = document.createElement('div');
             subtitleDiv.className = 'subtitle';
-            subtitleDiv.style.cssText = `
-                position: absolute;
-                bottom: 100px;
-                left: 50%;
-                transform: translateX(-50%);
-                text-align: center;
-                z-index: 1;
-                cursor: move;
-            `;
             
             const zhDiv = document.createElement('div');
-            zhDiv.className = 'subtitle-zh';
-            zhDiv.style.cssText = `
-                color: white;
-                font-size: 24px;
-                font-weight: bold;
-                padding: 8px 16px;
-                margin: 8px 0;
-                background-color: rgba(0, 0, 0, 0.8);
-                border-radius: 4px;
-                display: block;
-            `;
+            zhDiv.className = 'subtitle-zh subtitle-text';
             
             const enDiv = document.createElement('div');
-            enDiv.className = 'subtitle-en';
-            enDiv.style.cssText = zhDiv.style.cssText;
+            enDiv.className = 'subtitle-en subtitle-text';
+            
+            // 应用默认样式
+            const defaultStyles = {
+                color: document.getElementById('subtitle-color').value,
+                backgroundColor: document.getElementById('subtitle-background').value,
+                fontSize: document.getElementById('subtitle-size').value + 'px',
+                fontWeight: document.getElementById('subtitle-weight').value
+            };
+            [zhDiv, enDiv].forEach(div => {
+                Object.assign(div.style, defaultStyles);
+            });
             
             subtitleDiv.appendChild(zhDiv);
             subtitleDiv.appendChild(enDiv);
             video.parentElement.appendChild(subtitleDiv);
+            // 添加拖动功能
+            //makeDraggable(subtitleDiv);
             
             // 添加拖动功能
             let isDragging = false;
@@ -332,10 +393,10 @@
                 subtitleDiv.style.display = 'block';
             });
             
-            // 当视频暂停时隐藏字幕容器
-            video.addEventListener('pause', function() {
-                subtitleDiv.style.display = 'none';
-            });
+            // 当视频暂���时隐藏字幕容器
+            // video.addEventListener('pause', function() {
+            //     subtitleDiv.style.display = 'none';
+            // });
         });
 
         // 中文字幕上传
@@ -363,6 +424,76 @@
             };
             reader.readAsText(file);
         });
+
+        
+        // 修改样式控制初始化函数f
+        function initializeStyleControls() {
+            // 字幕颜色控制
+            document.getElementById('subtitle-color').addEventListener('change', function() {
+                const subtitleTexts = document.querySelectorAll('.subtitle-text');
+                subtitleTexts.forEach(subtitle => {
+                    subtitle.style.setProperty('color', this.value, 'important');
+                });
+                // 保存样式到localStorage
+                saveSubtitleStyles();
+            });
+
+            // 背景颜色控制
+            document.getElementById('subtitle-background').addEventListener('change', function() {
+                const subtitleTexts = document.querySelectorAll('.subtitle-text');
+                subtitleTexts.forEach(subtitle => {
+                    subtitle.style.setProperty('background-color', this.value, 'important');
+                });
+                // 保存样式到localStorage
+                saveSubtitleStyles();
+            });
+
+            // 字体大小控制
+            document.getElementById('subtitle-size').addEventListener('change', function() {
+                const subtitleTexts = document.querySelectorAll('.subtitle-text');
+                subtitleTexts.forEach(subtitle => {
+                    subtitle.style.setProperty('font-size', this.value + 'px', 'important');
+                });
+                // 保存样式到localStorage
+                saveSubtitleStyles();
+            });
+
+            // 字体粗细控制
+            document.getElementById('subtitle-weight').addEventListener('change', function() {
+                const subtitleTexts = document.querySelectorAll('.subtitle-text');
+                subtitleTexts.forEach(subtitle => {
+                    subtitle.style.setProperty('font-weight', this.value, 'important');
+                });
+                // 保存样式到localStorage
+                saveSubtitleStyles();
+            });
+        }
+
+        // 保存字幕样式到localStorage
+        function saveSubtitleStyles() {
+            const styles = {
+                color: document.getElementById('subtitle-color').value,
+                backgroundColor: document.getElementById('subtitle-background').value,
+                fontSize: document.getElementById('subtitle-size').value,
+                fontWeight: document.getElementById('subtitle-weight').value
+            };
+            localStorage.setItem('subtitleStyles', JSON.stringify(styles));
+        }
+
+        // 应用保存的字幕样式
+        function applySubtitleStyles() {
+            const savedStyles = localStorage.getItem('subtitleStyles');
+            if (savedStyles) {
+                const styles = JSON.parse(savedStyles);
+                const subtitleTexts = document.querySelectorAll('.subtitle-text');
+                subtitleTexts.forEach(subtitle => {
+                    subtitle.style.setProperty('color', styles.color, 'important');
+                    subtitle.style.setProperty('background-color', styles.backgroundColor, 'important');
+                    subtitle.style.setProperty('font-size', styles.fontSize + 'px', 'important');
+                    subtitle.style.setProperty('font-weight', styles.fontWeight, 'important');
+                });
+            }
+        }
 
         // 解析 SRT 文件
         function parseSRT(content) {
@@ -426,13 +557,15 @@
                 enDiv.style.display = 'none';
             }
 
-            // 高亮显示当前播放的字幕行
-            if (zhSubtitle) {
-                highlightCurrentLine('zh-subtitles', zhSubtitle.text);
-            }
-            if (enSubtitle) {
-                highlightCurrentLine('en-subtitles', enSubtitle.text);
-            }
+             // 持续高亮显示当前播放的字幕行
+            requestAnimationFrame(() => {
+                if (zhSubtitle) {
+                    highlightCurrentLine('zh-subtitles', zhSubtitle.text);
+                }
+                if (enSubtitle) {
+                    highlightCurrentLine('en-subtitles', enSubtitle.text);
+                }
+            });
         }
 
         // 添加字幕拖动功能
