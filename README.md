@@ -1,6 +1,9 @@
-state：not finished entirely
+
 
 <img width="791" alt="截屏2024-11-05 20 26 16" src="https://github.com/user-attachments/assets/beaa7634-b917-401f-aced-0d012bc4a061">
+
+
+project progress：not finished entirely
 
 # 项目名称 / Project Name
 
