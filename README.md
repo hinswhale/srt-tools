@@ -1,9 +1,14 @@
+![image](https://github.com/user-attachments/assets/1e14aecc-4f23-453b-b53d-ba4c157e19a4)
 
 
-<img width="791" alt="截屏2024-11-05 20 26 16" src="https://github.com/user-attachments/assets/beaa7634-b917-401f-aced-0d012bc4a061">
 
-
-project progress：not finished entirely
+# project progress：
+not finished entirely
+todo
+- 高亮问题
+- 切换字幕样式后不会立即生效
+- ai识别功能【语音识别/字幕翻译】
+     
 
 # 项目名称 / Project Name
 
